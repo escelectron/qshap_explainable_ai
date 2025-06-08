@@ -1,0 +1,11 @@
+streamlit
+pandas
+openpyxl
+seaborn
+matplotlib
+scikit-learn
+pennylane
+pennylane-lightning
+pgmpy
+xgboost
+joblib
