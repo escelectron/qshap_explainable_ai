@@ -18,7 +18,6 @@ Dataset file:
 
 ## Project Structure
 
-----------------------------------------------------------------------------------------|
 | File                   | Purpose                                                      |
 |------------------------|--------------------------------------------------------------|
 | `qbn_dashboard.py`     | Main Streamlit app                                           |
@@ -28,7 +27,7 @@ Dataset file:
 | `data/`                | Contains dataset file                                        |
 | `requirements.txt`     | All required Python packages                                 |
 | `LICENSE`              | License information                                          |
-|---------------------------------------------------------------------------------------|
+
 
 ## Deployment
 

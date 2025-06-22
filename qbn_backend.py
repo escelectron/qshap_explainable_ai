@@ -1,70 +1,40 @@
-"""
-Quantum Explainable AI Backend (QBN Backend)
-Author: Pranav Sanghadia
-License: MIT
-"""
+import joblib
+import numpy as np
+import os
 
-import pennylane as qml
-from pennylane import numpy as np
+# Load model
+model_path = os.path.join("models", "xgb_credit_model.joblib")
+model = joblib.load(model_path)
 
-# Define the feature columns globally
+# Define feature columns
 feature_columns = ["LIMIT_BAL", "Age", "PAY_AMT1", "EDUCATION", "MARRIAGE"]
 
-# Automatically define qubit count
-n_qubits = len(feature_columns) + 1  # +1 for Default qubit
-dev = qml.device("default.qubit", wires=n_qubits)
-
-@qml.qnode(dev)
-def qbn_circuit(theta, interventions=None):
+def run_inference(profile, do_intervene=False, intervention_target=None):
     """
-    Quantum Bayesian Network circuit with parameterized entanglement.
-    theta: list of angles for input qubits.
-    interventions: dict {index: overridden_angle} to simulate do(X=x)
+    Inference function for a single profile.
+    Optionally accepts intervention dict to override feature values.
     """
-    assert len(theta) == n_qubits - 1, f"Expected {n_qubits - 1} input angles."
-
-    for i in range(n_qubits - 1):
-        angle = theta[i] if interventions is None or i not in interventions else interventions[i]
-        qml.RY(angle, wires=i)
-        qml.CRY(angle, wires=[i, n_qubits - 1])  # Causal entanglement
-
-    return qml.probs(wires=n_qubits - 1)
-
-def angle_map(binary_values):
-    """
-    Maps binary inputs [0, 1] to RY angles.
-    """
-    return [0.1 * np.pi if x == 0 else 0.9 * np.pi for x in binary_values]
-
-def run_inference(feature_values, do_intervene=False, intervention_target=None, shots=1000):
-    """
-    Runs inference for one input profile.
-    Supports interventions and uncertainty quantification.
-    """
-    theta = angle_map(feature_values)
-    
-    # Prepare interventions in angle space
-    if do_intervene and intervention_target:
-        feature_index = {name: idx for idx, name in enumerate(feature_columns)}
-        interventions = {feature_index[k]: angle_map([v])[0] for k, v in intervention_target.items()}
-        probs = qbn_circuit(theta, interventions)
+    # If profile is a list (like [0,1,1,0,0]), convert it to a dict
+    if isinstance(profile, list):
+        input_data = {feat: val for feat, val in zip(feature_columns, profile)}
     else:
-        probs = qbn_circuit(theta)
+        input_data = profile.copy()
 
-    return float(probs[1])
+    if do_intervene and intervention_target:
+        input_data.update(intervention_target)
 
-def batch_inference(profiles, intervention_target=None):
-    """
-    Run full batch inference across all profiles.
-    """
+    row = np.array([input_data[feat] for feat in feature_columns]).reshape(1, -1)
+    prob = model.predict_proba(row)[0][1]
+    return prob
+
+
+def batch_inference(profiles, interventions=None):
     results = []
     for profile in profiles:
-        p_obs = run_inference(profile, do_intervene=False)
-        p_do  = run_inference(profile, do_intervene=True, intervention_target=intervention_target)
-        results.append({
-            **{feature_columns[i]: profile[i] for i in range(len(feature_columns))},
-            "P(Default=1) observed": round(p_obs, 4),
-            "P(Default=1) do()": round(p_do, 4),
-            "Delta": round(p_do - p_obs, 4)
-        })
+        prob = run_inference(profile, do_intervene=bool(interventions), intervention_target=interventions)
+        # Build a dict from the profile and append probability
+        result = {feat: val for feat, val in zip(feature_columns, profile)}
+        result["Delta"] = prob
+        results.append(result)
     return results
+
