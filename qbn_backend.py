@@ -1,3 +1,9 @@
+"""
+Quantum Explainable AI : QBN Backend
+Author: Pranav Sanghadia
+License: MIT
+"""
+
 import joblib
 import numpy as np
 import os
@@ -10,11 +16,7 @@ model = joblib.load(model_path)
 feature_columns = ["LIMIT_BAL", "Age", "PAY_AMT1", "EDUCATION", "MARRIAGE"]
 
 def run_inference(profile, do_intervene=False, intervention_target=None):
-    """
-    Inference function for a single profile.
-    Optionally accepts intervention dict to override feature values.
-    """
-    # If profile is a list (like [0,1,1,0,0]), convert it to a dict
+
     if isinstance(profile, list):
         input_data = {feat: val for feat, val in zip(feature_columns, profile)}
     else:

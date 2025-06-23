@@ -1,7 +1,13 @@
+"""
+Quantum Explainable AI : Interventional V2
+Author: Pranav Sanghadia
+License: MIT
+"""
+
+
 import pandas as pd
 import os
 
-# Use future-proofed data path
 DATA_FILE = os.path.join("data", "default_of_credit_card_clients.xlsx")
 
 def load_data():

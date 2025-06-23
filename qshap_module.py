@@ -8,6 +8,9 @@ License: MIT
 import numpy as np
 from itertools import product
 
+import shap
+import xgboost as xgb
+
 # Assumed feature columns
 feature_columns = ["LIMIT_BAL", "Age", "PAY_AMT1", "EDUCATION", "MARRIAGE"]
 
@@ -37,3 +40,13 @@ def compute_qshap_all(run_inference_fn, profiles):
     for feature in feature_columns:
         shap_results[feature] = compute_qshap_single(run_inference_fn, profiles, feature)
     return shap_results
+
+def compute_classical_shap_values(model, profiles_df):
+    explainer = shap.Explainer(model)
+    shap_values = explainer(profiles_df)
+    feature_importance = shap_values.values.mean(axis=0)
+    
+    return {
+        feature: float(importance)
+        for feature, importance in zip(profiles_df.columns, feature_importance)
+    }
